@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-LABEL maintainer="yourname"
+LABEL maintainer="zhang-hz"
 
 ENV DERP_DOMAIN=""
 ENV DERP_CERT_DIR="/app/certs"
@@ -10,7 +10,7 @@ ENV DERP_HTTPS_PORT="443"
 ENV DERP_VERIFY_CLIENTS="false"
 ENV ACME_DNS_PROVIDER=""
 ENV ACME_EMAIL=""
-ENV ACME_ENV_FILE=""
+ENV ACME_ENV_FILE="/app/acme.env"
 ENV AUTO_RENEW_CERTS="true"
 ENV RENEW_INTERVAL="86400"
 
