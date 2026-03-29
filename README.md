@@ -141,13 +141,26 @@ docker-compose up -d
 
 启用 `DERP_VERIFY_CLIENTS=true` 时，derper 只允许你的 Tailnet 中的节点连接。
 
-**原生部署方式**：
-- 脚本会自动配置并启用验证
-- 确保你的服务器能访问 Tailscale 控制平面
+**重要**：`-verify-clients` 需要本地运行 `tailscaled` 实例来验证客户端身份。
 
-**Docker 部署方式**：
-- 需要在同一网络中运行 tailscaled
-- 或提供 Tailscale OAuth 凭证
+#### 原生部署方式：
+
+1. **创建 Auth Key**（从 Tailscale Admin Console）：
+   - 登录 https://login.tailscale.com/admin/settings/keys
+   - 创建一个新的 Auth Key（推荐使用带标签的 key，如 `tag:derper`）
+
+2. **登录 Tailscale**：
+   ```bash
+   systemctl start tailscaled
+   tailscale up --authkey=tskey-auth-YOUR-KEY-HERE
+   systemctl enable tailscaled
+   ```
+
+3. **服务会自动检测 tailscaled** 并启用验证
+
+#### Docker 部署方式：
+
+需要在容器内或通过 volume 共享 tailscaled socket，或配置 Tailscale OAuth 凭证。
 
 ---
 
