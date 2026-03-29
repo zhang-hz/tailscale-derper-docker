@@ -66,6 +66,11 @@ fi
 
 if [ "$DERP_VERIFY_CLIENTS" = "true" ]; then
     DERPER_ARGS="$DERPER_ARGS -verify-clients"
+    # Use provided TS_SOCKET or default path
+    if [ -n "$TS_SOCKET" ]; then
+        export TS_SOCKET="$TS_SOCKET"
+        echo "Using Tailscale socket: $TS_SOCKET"
+    fi
 fi
 
 if [ ! -z "$DERP_STUN_PORT" ]; then

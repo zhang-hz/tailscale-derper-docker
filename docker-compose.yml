@@ -3,6 +3,7 @@ services:
     build: .
     container_name: tailscale-derper
     restart: unless-stopped
+    network_mode: host
     ports:
       - "${DERP_HTTPS_PORT:-443}:${DERP_HTTPS_PORT:-443}"
       - "${DERP_STUN_PORT:-3478}:3478/udp"
@@ -17,8 +18,12 @@ services:
       - ACME_ENV_FILE=/app/acme.env
       - AUTO_RENEW_CERTS=${AUTO_RENEW_CERTS:-true}
       - RENEW_INTERVAL=${RENEW_INTERVAL:-86400}
+      # Tailscale socket for verify-clients
+      - TS_SOCKET=/var/run/tailscale/tailscaled.sock
     volumes:
       - ./certs:/app/certs
       - ./acme.env:/app/acme.env:ro
+      # Share tailscaled socket from host for verify-clients
+      - /var/run/tailscale:/var/run/tailscale:ro
     env_file:
       - .env

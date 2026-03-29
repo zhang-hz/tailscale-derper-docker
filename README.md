@@ -219,6 +219,30 @@ sudo tailscale status
 sudo journalctl -u derper -n 5 | grep verify-clients
 ```
 
+### Docker 部署配置验证
+
+Docker 部署时，`docker-compose.yml` 已配置自动共享 host 的 tailscaled socket。
+
+**前提条件**：Host 上必须运行着已登录的 `tailscaled`
+
+```bash
+# 在 host 上安装并登录 tailscale
+curl -fsSL https://tailscale.com/install.sh | sh
+tailscale up --authkey=tskey-auth-xxx
+systemctl enable --now tailscaled
+```
+
+Docker compose 配置会自动共享 `/var/run/tailscale` 到容器内。
+
+验证配置：
+```bash
+# 确认容器能看到 socket
+docker exec tailscale-derper ls -la /var/run/tailscale/
+
+# 查看日志确认验证已启用
+docker logs tailscale-derper | grep verify-clients
+```
+
 ---
 
 ## GitHub Actions
