@@ -1,0 +1,169 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  schedule:
+    # 每周一凌晨构建
+    - cron: '0 0 * * MON'
+  workflow_dispatch:
+    inputs:
+      tailscale_version:
+        description: 'Tailscale 版本 (留空使用最新)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # 构建 Docker 镜像
+  docker:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.REGISTRY }}/${{ github.actor }}/tailscale-derper
+            tailscale-derper
+          tags: |
+            type=sha,prefix=
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Get latest tailscale version
+        id: version
+        run: |
+          if [ -n "${{ inputs.tailscale_version }}" ]; then
+            VERSION="${{ inputs.tailscale_version }}"
+          else
+            VERSION=$(curl -s https://api.github.com/repos/tailscale/tailscale/releases/latest | jq -r '.tag_name')
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Using tailscale version: $VERSION"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64, linux/arm64, linux/arm/v7
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            DERP_VERSION=${{ steps.version.outputs.version }}
+
+  # 每周定时构建（确保镜像定期更新）
+  weekly-build:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get latest tailscale version
+        id: version
+        run: |
+          VERSION=$(curl -s https://api.github.com/repos/tailscale/tailscale/releases/latest | jq -r '.tag_name')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Using tailscale version: $VERSION"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64, linux/arm64, linux/arm/v7
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.actor }}/tailscale-derper:latest
+            ${{ env.REGISTRY }}/${{ github.actor }}/tailscale-derper:${{ steps.version.outputs.version }}
+          build-args: |
+            DERP_VERSION=${{ steps.version.outputs.version }}
+
+  # 验证 Docker 镜像配置
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose
+        run: |
+          if command -v docker-compose &> /dev/null; then
+            docker-compose config --quiet
+            echo "docker-compose.yml 验证通过"
+          elif command -v docker &> /dev/null; then
+            docker compose config --quiet
+            echo "docker compose 配置验证通过"
+          else
+            echo "Docker 未安装，跳过验证"
+          fi
+
+      - name: Check for required files
+        run: |
+          for file in Dockerfile docker-compose.yml .env.example; do
+            if [ -f "$file" ]; then
+              echo "✓ $file 存在"
+            else
+              echo "✗ $file 缺失"
+              exit 1
+            fi
+          done
+
+  # ShellCheck 验证脚本
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          files: |
+            deploy-native.sh
+            entrypoint.sh
+            acme-renew.sh
