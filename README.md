@@ -80,7 +80,7 @@ docker-compose up -d
 ```env
 DERP_DOMAIN=derp.yourdomain.com
 DERP_STUN_PORT=3478
-DERP_HTTPS_PORT=14430
+DERP_HTTPS_PORT=443
 DERP_VERIFY_CLIENTS=true
 ACME_DNS_PROVIDER=dns_dp
 ACME_EMAIL=your@email.com
@@ -260,7 +260,7 @@ sudo journalctl -u derper -n 5 | grep verify-clients
 
 ```bash
 # 查看端口占用
-sudo lsof -i :14430
+sudo lsof -i :443
 
 # 或修改 .env 中的端口
 ```

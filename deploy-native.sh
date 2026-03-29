@@ -111,7 +111,7 @@ mkdir -p /opt/derper/certs
 cat > /opt/derper/config << EOF
 DERP_DOMAIN=$DERP_DOMAIN
 DERP_STUN_PORT=${DERP_STUN_PORT:-3478}
-DERP_HTTPS_PORT=${DERP_HTTPS_PORT:-14430}
+DERP_HTTPS_PORT=${DERP_HTTPS_PORT:-443}
 DERP_VERIFY_CLIENTS=${DERP_VERIFY_CLIENTS:-false}
 ACME_DNS_PROVIDER=${ACME_DNS_PROVIDER:-}
 ACME_EMAIL=${ACME_EMAIL:-}
@@ -215,7 +215,7 @@ User=root
 WorkingDirectory=/opt/derper
 Environment="PATH=/root/go/bin:/usr/local/go/bin:/root/.acme.sh:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/root/go/bin/derper \\
-    -a :${DERP_HTTPS_PORT:-14430} \\
+    -a :${DERP_HTTPS_PORT:-443} \\
     -certmode manual \\
     -certdir /opt/derper/certs \\
     -hostname ${DERP_DOMAIN} \\
