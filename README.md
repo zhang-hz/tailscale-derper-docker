@@ -260,7 +260,7 @@ sudo journalctl -u derper -n 5 | grep verify-clients
 
 ```bash
 # 查看端口占用
-sudo lsof -i :14433
+sudo lsof -i :14430
 
 # 或修改 .env 中的端口
 ```
